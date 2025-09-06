@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 
-// Estilos CSS incorporados
+// Estilos CSS com a máxima especificidade e proteção contra estilos globais
 const styles = `
-:root {
+/* Estilos do conversor de moeda com alta especificidade */
+#currency-converter-component.currency-converter-root {
+  all: initial !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif !important;
   --primary: #4a90e2;
   --secondary: #50e3c2;
   --bg-light: #f5f5f5;
@@ -10,214 +13,237 @@ const styles = `
   --text-main: #333333;
   --text-secondary: #666666;
   --border-radius: 12px;
+  
+  /* Layout fixo para contornar o flex do body */
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  min-height: 50vh !important;
+  padding: 20px !important;
+  background-color: var(--bg-light) !important;
+  color: var(--text-main) !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  isolation: isolate !important;
 }
 
+#currency-converter-component.currency-converter-root * {
+  all: unset !important;
+  box-sizing: border-box !important;
+  font-family: inherit !important;
+}
+
+#currency-converter-component.currency-converter-root .currency-converter-inner {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  min-height: 50vh !important;
+  width: 100% !important;
+}
+
+/* Dark mode */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg-light: #1e1e1e;
-    --card-bg: #2c2c2c;
-    --text-main: #ffffff;
-    --text-secondary: #cccccc;
+  #currency-converter-component.currency-converter-root {
+    --bg-light: #1e1e1e !important;
+    --card-bg: #2c2c2c !important;
+    --text-main: #ffffff !important;
+    --text-secondary: #cccccc !important;
   }
 }
 
-* {
-  box-sizing: border-box;
+#currency-converter-component.currency-converter-root .currency-converter-card {
+  width: 100% !important;
+  max-width: 450px !important;
+  padding: 32px !important;
+  border-radius: var(--border-radius) !important;
+  background-color: var(--card-bg) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 20px !important;
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
-  background-color: var(--bg-light);
-  color: var(--text-main);
-  margin: 0;
-  padding: 20px;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+#currency-converter-component.currency-converter-root .currency-converter-title {
+  margin: 0 !important;
+  color: var(--primary) !important;
+  font-size: 2.2rem !important;
+  font-weight: 700 !important;
+  line-height: 1.1 !important;
 }
 
-.card {
-  width: 100%;
-  max-width: 450px;
-  padding: 32px;
-  border-radius: var(--border-radius);
-  background-color: var(--card-bg);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+#currency-converter-component.currency-converter-root .currency-converter-input {
+  width: 100% !important;
+  padding: 16px !important;
+  font-size: 18px !important;
+  border: 2px solid var(--secondary) !important;
+  border-radius: var(--border-radius) !important;
+  background-color: var(--card-bg) !important;
+  color: var(--text-main) !important;
 }
 
-h1 {
-  margin: 0;
-  color: var(--primary);
-  font-size: 2.2rem;
-  font-weight: 700;
+#currency-converter-component.currency-converter-root .currency-converter-input:focus {
+  outline: none !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1) !important;
 }
 
-.currency-input {
-  width: 100%;
-  padding: 16px;
-  font-size: 18px;
-  border: 2px solid var(--secondary);
-  border-radius: var(--border-radius);
-  background-color: var(--card-bg);
-  color: var(--text-main);
+#currency-converter-component.currency-converter-root .currency-converter-selects-container {
+  display: flex !important;
+  gap: 12px !important;
+  width: 100% !important;
 }
 
-.currency-input:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+#currency-converter-component.currency-converter-root .currency-converter-selects-container > div {
+  flex: 1 !important;
 }
 
-.selects-container {
-  display: flex;
-  gap: 12px;
-  width: 100%;
+#currency-converter-component.currency-converter-root .currency-converter-button {
+  width: 100% !important;
+  padding: 16px !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  background-color: var(--primary) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: var(--border-radius) !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
 }
 
-.selects-container > div {
-  flex: 1;
+#currency-converter-component.currency-converter-root .currency-converter-button:hover:not(:disabled) {
+  background-color: var(--secondary) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(80, 227, 194, 0.3) !important;
 }
 
-.convert-button {
-  width: 100%;
-  padding: 16px;
-  font-size: 18px;
-  font-weight: 600;
-  background-color: var(--primary);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  transition: all 0.3s ease;
+#currency-converter-component.currency-converter-root .currency-converter-button:focus {
+  outline: 4px auto -webkit-focus-ring-color !important;
 }
 
-.convert-button:hover:not(:disabled) {
-  background-color: var(--secondary);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(80, 227, 194, 0.3);
+#currency-converter-component.currency-converter-root .currency-converter-button:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
 }
 
-.convert-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+#currency-converter-component.currency-converter-root .currency-converter-result-container {
+  padding: 20px !important;
+  background-color: var(--bg-light) !important;
+  border-radius: var(--border-radius) !important;
 }
 
-.result-container {
-  padding: 20px;
-  background-color: var(--bg-light);
-  border-radius: var(--border-radius);
+#currency-converter-component.currency-converter-root .currency-converter-result-container h3 {
+  margin: 0 0 12px 0 !important;
+  color: var(--text-secondary) !important;
+  font-size: 1.1rem !important;
 }
 
-.result-container h3 {
-  margin: 0 0 12px 0;
-  color: var(--text-secondary);
-  font-size: 1.1rem;
+#currency-converter-component.currency-converter-root .currency-converter-result-text {
+  font-size: 1.4rem !important;
+  margin: 0 !important;
+  color: var(--text-main) !important;
 }
 
-.result-text {
-  font-size: 1.4rem;
-  margin: 0;
-  color: var(--text-main);
+#currency-converter-component.currency-converter-root .currency-converter-result-text strong {
+  color: var(--primary) !important;
+  font-weight: 700 !important;
 }
 
-.result-text strong {
-  color: var(--primary);
-  font-weight: 700;
+#currency-converter-component.currency-converter-root .currency-converter-result-placeholder {
+  color: var(--text-secondary) !important;
+  font-style: italic !important;
+  margin: 0 !important;
 }
 
-.result-placeholder {
-  color: var(--text-secondary);
-  font-style: italic;
-  margin: 0;
+#currency-converter-component.currency-converter-root .currency-converter-custom-select-container {
+  position: relative !important;
+  width: 100% !important;
 }
 
-.custom-select-container {
-  position: relative;
-  width: 100%;
+#currency-converter-component.currency-converter-root .currency-converter-custom-select-trigger {
+  width: 100% !important;
+  padding: 12px 16px !important;
+  border: 2px solid var(--secondary) !important;
+  border-radius: var(--border-radius) !important;
+  cursor: pointer !important;
+  background-color: var(--card-bg) !important;
+  color: var(--text-main) !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  font-weight: 500 !important;
 }
 
-.custom-select-trigger {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid var(--secondary);
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  background-color: var(--card-bg);
-  color: var(--text-main);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 500;
+#currency-converter-component.currency-converter-root .currency-converter-custom-select-trigger:hover {
+  border-color: var(--primary) !important;
 }
 
-.custom-select-trigger:hover {
-  border-color: var(--primary);
+#currency-converter-component.currency-converter-root .currency-converter-custom-select-trigger:focus {
+  outline: 4px auto -webkit-focus-ring-color !important;
 }
 
-.custom-select-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  max-height: 200px;
-  overflow-y: auto;
-  border: 2px solid var(--secondary);
-  border-radius: var(--border-radius);
-  background-color: var(--card-bg);
-  z-index: 1000;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-  margin-top: 2px;
+#currency-converter-component.currency-converter-root .currency-converter-custom-select-dropdown {
+  position: absolute !important;
+  top: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  max-height: 200px !important;
+  overflow-y: auto !important;
+  border: 2px solid var(--secondary) !important;
+  border-radius: var(--border-radius) !important;
+  background-color: var(--card-bg) !important;
+  z-index: 1000 !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+  margin-top: 2px !important;
 }
 
-.custom-select-option {
-  padding: 12px 16px;
-  cursor: pointer;
-  border-bottom: 1px solid var(--bg-light);
-  font-size: 14px;
-  transition: background-color 0.2s ease;
+#currency-converter-component.currency-converter-root .currency-converter-custom-select-option {
+  padding: 12px 16px !important;
+  cursor: pointer !important;
+  border-bottom: 1px solid var(--bg-light) !important;
+  font-size: 14px !important;
+  transition: background-color 0.2s ease !important;
+  color: var(--text-main) !important;
 }
 
-.custom-select-option:hover {
-  background-color: var(--bg-light);
+#currency-converter-component.currency-converter-root .currency-converter-custom-select-option:hover {
+  background-color: var(--bg-light) !important;
 }
 
-.custom-select-option:last-child {
-  border-bottom: none;
+#currency-converter-component.currency-converter-root .currency-converter-custom-select-option:last-child {
+  border-bottom: none !important;
 }
 
-.no-wrap {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+#currency-converter-component.currency-converter-root .currency-converter-no-wrap {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
+/* Responsive */
 @media (max-width: 480px) {
-  body {
-    padding: 16px;
+  #currency-converter-component.currency-converter-root {
+    padding: 16px !important;
   }
 
-  .card {
-    padding: 24px;
-    gap: 16px;
+  #currency-converter-component.currency-converter-root .currency-converter-card {
+    padding: 24px !important;
+    gap: 16px !important;
   }
 
-  .selects-container {
-    flex-direction: column;
+  #currency-converter-component.currency-converter-root .currency-converter-selects-container {
+    flex-direction: column !important;
   }
 
-  h1 {
-    font-size: 1.8rem;
+  #currency-converter-component.currency-converter-root .currency-converter-title {
+    font-size: 1.8rem !important;
   }
 
-  .currency-input,
-  .convert-button {
-    font-size: 16px;
-    padding: 14px;
+  #currency-converter-component.currency-converter-root .currency-converter-input,
+  #currency-converter-component.currency-converter-root .currency-converter-button {
+    font-size: 16px !important;
+    padding: 14px !important;
   }
 }
 `;
@@ -230,7 +256,9 @@ function Input({ type, value, onChange, placeholder }) {
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="currency-input"
+      className="currency-converter-input"
+      min="0"
+      step="0.01"
     />
   );
 }
@@ -257,9 +285,17 @@ function Select({ value, onChange, options }) {
   };
 
   return (
-    <div ref={containerRef} className="custom-select-container">
-      <div className="custom-select-trigger" onClick={() => setOpen(!open)}>
-        <span className="no-wrap">{value || "Selecione"}</span>
+    <div
+      ref={containerRef}
+      className="currency-converter-custom-select-container"
+    >
+      <div
+        className="currency-converter-custom-select-trigger"
+        onClick={() => setOpen(!open)}
+      >
+        <span className="currency-converter-no-wrap">
+          {value || "Selecione"}
+        </span>
         <span
           style={{
             fontSize: "10px",
@@ -272,11 +308,11 @@ function Select({ value, onChange, options }) {
       </div>
 
       {open && (
-        <div className="custom-select-dropdown">
+        <div className="currency-converter-custom-select-dropdown">
           {options.map((opt) => (
             <div
               key={opt}
-              className="custom-select-option no-wrap"
+              className="currency-converter-custom-select-option currency-converter-no-wrap"
               onClick={() => handleSelect(opt)}
             >
               {opt}
@@ -291,7 +327,11 @@ function Select({ value, onChange, options }) {
 // Componente Button
 function Button({ onClick, disabled, children }) {
   return (
-    <button onClick={onClick} disabled={disabled} className="convert-button">
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="currency-converter-button"
+    >
       {children}
     </button>
   );
@@ -300,17 +340,17 @@ function Button({ onClick, disabled, children }) {
 // Componente Result
 function Result({ amount, from, to, value }) {
   return (
-    <div className="result-container">
+    <div className="currency-converter-result-container">
       <h3>Resultado</h3>
       {value !== null ? (
-        <p className="result-text">
+        <p className="currency-converter-result-text">
           {amount} <strong>{from}</strong> ={" "}
           <strong>
             {value} {to}
           </strong>
         </p>
       ) : (
-        <p className="result-placeholder">
+        <p className="currency-converter-result-placeholder">
           Clique em "Converter" para ver o resultado
         </p>
       )}
@@ -358,7 +398,7 @@ function CurrencyConverter() {
       });
   }, []);
 
-  const API_KEY = import.meta.env.VITE_EXCHANGE_KEY; // ✅ variável de ambiente Vite
+  const API_KEY = import.meta.env.VITE_EXCHANGE_KEY;
 
   const convert = async () => {
     const amt = parseFloat(amount);
@@ -391,39 +431,95 @@ function CurrencyConverter() {
   return (
     <>
       <style>{styles}</style>
-      <div className="card">
-        <h1>ExRate 💱</h1>
+      <div
+        id="currency-converter-component"
+        className="currency-converter-root"
+        style={{
+          // Estilos inline como fallback absoluto
+          all: "initial",
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif',
+          backgroundColor: "#f5f5f5",
+          color: "#333333",
+          padding: "20px",
+          minHeight: "50vh",
+          display: "block",
+          width: "100%",
+          margin: "0",
+          boxSizing: "border-box",
+          isolation: "isolate",
+          position: "relative",
+        }}
+      >
+        <div
+          className="currency-converter-inner"
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "50vh",
+            width: "100%",
+          }}
+        >
+          <div
+            className="currency-converter-card"
+            style={{
+              width: "100%",
+              maxWidth: "450px",
+              padding: "32px",
+              borderRadius: "12px",
+              backgroundColor: "#ffffff",
+              boxShadow: "0 10px 30px rgba(0, 0, 0, 0.15)",
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
+            }}
+          >
+            <h1
+              className="currency-converter-title"
+              style={{
+                margin: "0",
+                color: "#4a90e2",
+                fontSize: "2.2rem",
+                fontWeight: "700",
+              }}
+            >
+              ExRate 💱
+            </h1>
 
-        <Input
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="Valor"
-        />
+            <Input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Valor"
+            />
 
-        <div className="selects-container">
-          <Select
-            value={fromCurrency}
-            onChange={(e) => setFromCurrency(e.target.value)}
-            options={currencies}
-          />
-          <Select
-            value={toCurrency}
-            onChange={(e) => setToCurrency(e.target.value)}
-            options={currencies}
-          />
+            <div className="currency-converter-selects-container">
+              <Select
+                value={fromCurrency}
+                onChange={(e) => setFromCurrency(e.target.value)}
+                options={currencies}
+              />
+              <Select
+                value={toCurrency}
+                onChange={(e) => setToCurrency(e.target.value)}
+                options={currencies}
+              />
+            </div>
+
+            <Button onClick={convert} disabled={loading}>
+              {loading ? "Convertendo..." : "Converter"}
+            </Button>
+
+            <Result
+              amount={amount}
+              from={fromCurrency}
+              to={toCurrency}
+              value={result}
+            />
+          </div>
         </div>
-
-        <Button onClick={convert} disabled={loading}>
-          {loading ? "Convertendo..." : "Converter"}
-        </Button>
-
-        <Result
-          amount={amount}
-          from={fromCurrency}
-          to={toCurrency}
-          value={result}
-        />
       </div>
     </>
   );
