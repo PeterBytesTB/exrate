@@ -229,6 +229,128 @@ const styles = `
 }
 `;
 
+// Input memoizado
+const Input = memo(({ value, onChange }) => (
+  <input
+    type="number"
+    value={value}
+    onChange={onChange}
+    placeholder="Valor"
+    className="currency-converter-input"
+    min="0"
+    step="0.01"
+  />
+));
+
+// Select custom memoizado e otimizado
+const Select = memo(({ value, onChange, options }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const handleClickOutside = useCallback((e) => {
+    if (ref.current && !ref.current.contains(e.target)) {
+      setOpen(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [open, handleClickOutside]);
+
+  const handleSelect = useCallback(
+    (val) => {
+      onChange({ target: { value: val } });
+      setOpen(false);
+    },
+    [onChange]
+  );
+
+  const toggleOpen = useCallback(() => {
+    if (options.length > 0) setOpen((prev) => !prev);
+  }, [options.length]);
+
+  const disabled = options.length === 0;
+
+  return (
+    <div
+      ref={ref}
+      className={`currency-converter-custom-select-container ${
+        open ? "open" : ""
+      }`}
+    >
+      <div
+        className="currency-converter-custom-select-trigger"
+        onClick={toggleOpen}
+        style={{ cursor: disabled ? "not-allowed" : "pointer" }}
+      >
+        <span className="currency-converter-no-wrap">
+          {value || (disabled ? "Carregando..." : "Selecione")}
+        </span>
+        <span
+          style={{
+            fontSize: "10px",
+            transition: "transform 0.2s",
+            transform: open ? "rotate(180deg)" : "none",
+          }}
+        >
+          ▼
+        </span>
+      </div>
+
+      {options.length > 0 && open && (
+        <div
+          className="currency-converter-custom-select-dropdown"
+          style={{ height: "200px" }}
+        >
+          {options.map((opt) => (
+            <div
+              key={opt}
+              className="currency-converter-custom-select-option currency-converter-no-wrap"
+              onClick={() => handleSelect(opt)}
+            >
+              {opt}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+});
+
+// Button memoizado
+const Button = memo(({ onClick, disabled, children }) => (
+  <button
+    className="currency-converter-button"
+    onClick={onClick}
+    disabled={disabled}
+  >
+    {children}
+  </button>
+));
+
+// Result memoizado
+const Result = memo(({ amount, from, to, value }) => (
+  <div className="currency-converter-result-container">
+    <h3>Resultado</h3>
+    {value !== null ? (
+      <p className="currency-converter-result-text">
+        {amount} <strong>{from}</strong> ={" "}
+        <strong>
+          {value} {to}
+        </strong>
+      </p>
+    ) : (
+      <p className="currency-converter-result-placeholder">
+        Clique em "Converter" para ver o resultado
+      </p>
+    )}
+  </div>
+));
+
 export default function CurrencyConverter() {
   const [amount, setAmount] = useState(1);
   const [fromCurrency, setFromCurrency] = useState("");
@@ -237,47 +359,51 @@ export default function CurrencyConverter() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Carregar moedas
+  const fallbackCurrencies = [
+    "USD",
+    "BRL",
+    "EUR",
+    "GBP",
+    "JPY",
+    "CAD",
+    "AUD",
+    "CHF",
+    "CNY",
+    "ARS",
+  ];
+
+  // Carregar moedas com memoização
   useEffect(() => {
-    fetch("http://localhost:4000/symbols")
-      .then((res) => res.json())
-      .then((data) => {
-        const symbols = data?.symbols?.sort() || [
-          "USD",
-          "BRL",
-          "EUR",
-          "GBP",
-          "JPY",
-          "CAD",
-          "AUD",
-          "CHF",
-          "CNY",
-          "ARS",
-        ];
-        setCurrencies(symbols);
-        if (!fromCurrency) setFromCurrency("USD");
-        if (!toCurrency) setToCurrency("BRL");
-      })
-      .catch(() => {
-        const fallback = [
-          "USD",
-          "BRL",
-          "EUR",
-          "GBP",
-          "JPY",
-          "CAD",
-          "AUD",
-          "CHF",
-          "CNY",
-          "ARS",
-        ];
-        setCurrencies(fallback);
-        if (!fromCurrency) setFromCurrency(fallback[0]);
-        if (!toCurrency) setToCurrency(fallback[1]);
-      });
+    let isMounted = true;
+
+    async function loadSymbols() {
+      try {
+        const res = await fetch("http://localhost:4000/symbols");
+        const data = await res.json();
+
+        if (isMounted) {
+          const symbols = data?.symbols?.sort() || fallbackCurrencies;
+          setCurrencies(symbols);
+          setFromCurrency((prev) => prev || symbols[0]);
+          setToCurrency((prev) => prev || symbols[1]);
+        }
+      } catch {
+        if (isMounted) {
+          setCurrencies(fallbackCurrencies);
+          setFromCurrency((prev) => prev || fallbackCurrencies[0]);
+          setToCurrency((prev) => prev || fallbackCurrencies[1]);
+        }
+      }
+    }
+
+    loadSymbols();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Conversão
+  // Conversão memoizada
   const convert = useCallback(async () => {
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) return;
@@ -287,7 +413,8 @@ export default function CurrencyConverter() {
 
     try {
       const url = `http://localhost:4000/convert?from=${fromCurrency}&to=${toCurrency}&amount=${amt}`;
-      const data = await (await fetch(url)).json();
+      const response = await fetch(url);
+      const data = await response.json();
 
       if (typeof data.result === "number") {
         setResult(Number(data.result).toFixed(2));
@@ -301,145 +428,52 @@ export default function CurrencyConverter() {
     }
   }, [amount, fromCurrency, toCurrency]);
 
-  // Input memoizado
-  const Input = memo(({ value, onChange }) => (
-    <input
-      type="number"
-      value={value}
-      onChange={onChange}
-      placeholder="Valor"
-      className="currency-converter-input"
-      min="0"
-      step="0.01"
-    />
-  ));
+  // Handlers memoizados
+  const handleAmountChange = useCallback((e) => {
+    const value = e.target.value;
+    if (value === "" || (!isNaN(value) && parseFloat(value) >= 0)) {
+      setAmount(value);
+    }
+  }, []);
 
-  // Select otimizado e memoizado
-  const Select = memo(({ value, onChange, options }) => {
-    const [open, setOpen] = useState(false);
-    const ref = useRef(null);
+  const handleFromCurrencyChange = useCallback((e) => {
+    setFromCurrency(e.target.value);
+  }, []);
 
-    const handleClickOutside = useCallback((e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    }, []);
+  const handleToCurrencyChange = useCallback((e) => {
+    setToCurrency(e.target.value);
+  }, []);
 
-    useEffect(() => {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () =>
-        document.removeEventListener("mousedown", handleClickOutside);
-    }, [handleClickOutside]);
-
-    const handleSelect = useCallback(
-      (val) => {
-        onChange({ target: { value: val } });
-        setOpen(false);
-      },
-      [onChange]
-    );
-
-    const disabled = options.length === 0;
-
-    return (
-      <div
-        ref={ref}
-        className={`currency-converter-custom-select-container ${
-          open ? "open" : ""
-        }`}
-      >
-        <div
-          className="currency-converter-custom-select-trigger"
-          onClick={() => !disabled && setOpen(!open)}
-          style={{ cursor: disabled ? "not-allowed" : "pointer" }}
-        >
-          <span className="currency-converter-no-wrap">
-            {value || (disabled ? "Carregando..." : "Selecione")}
-          </span>
-          <span
-            style={{
-              fontSize: "10px",
-              transition: "transform 0.2s",
-              transform: open ? "rotate(180deg)" : "none",
-            }}
-          >
-            ▼
-          </span>
-        </div>
-
-        {options.length > 0 && open && (
-          <div
-            className="currency-converter-custom-select-dropdown"
-            style={{ height: "200px" }}
-          >
-            {options.map((opt) => (
-              <div
-                key={opt}
-                className="currency-converter-custom-select-option currency-converter-no-wrap"
-                onClick={() => handleSelect(opt)}
-              >
-                {opt}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  });
-
-  // Button memoizado
-  const Button = memo(({ onClick, disabled, children }) => (
-    <button
-      className="currency-converter-button"
-      onClick={onClick}
-      disabled={disabled}
-    >
-      {children}
-    </button>
-  ));
-
-  // Result memoizado
-  const Result = memo(({ amount, from, to, value }) => (
-    <div className="currency-converter-result-container">
-      <h3>Resultado</h3>
-      {value !== null ? (
-        <p className="currency-converter-result-text">
-          {amount} <strong>{from}</strong> ={" "}
-          <strong>
-            {value} {to}
-          </strong>
-        </p>
-      ) : (
-        <p className="currency-converter-result-placeholder">
-          Clique em "Converter" para ver o resultado
-        </p>
-      )}
-    </div>
-  ));
+  // Verificar se pode converter
+  const canConvert =
+    !loading && currencies.length > 0 && amount && parseFloat(amount) > 0;
 
   return (
     <>
-      <style>{styles}</style>
       <div id="currency-converter-component">
+        <style>{styles}</style>
         <div className="currency-converter-card">
           <h1 className="currency-converter-title">ExRate 💱</h1>
-          <Input value={amount} onChange={(e) => setAmount(e.target.value)} />
+
+          <Input value={amount} onChange={handleAmountChange} />
+
           <div className="currency-converter-selects-container">
             <Select
               value={fromCurrency}
-              onChange={(e) => setFromCurrency(e.target.value)}
+              onChange={handleFromCurrencyChange}
               options={currencies}
             />
             <Select
               value={toCurrency}
-              onChange={(e) => setToCurrency(e.target.value)}
+              onChange={handleToCurrencyChange}
               options={currencies}
             />
           </div>
-          <Button
-            onClick={convert}
-            disabled={loading || currencies.length === 0}
-          >
+
+          <Button onClick={convert} disabled={!canConvert}>
             {loading ? "Convertendo..." : "Converter"}
           </Button>
+
           <Result
             amount={amount}
             from={fromCurrency}
