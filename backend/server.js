@@ -1,44 +1,60 @@
 import express from "express";
 import cors from "cors";
 import axios from "axios";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Rota de conversão
+// Lista fixa de moedas (fallback)
+const fallbackSymbols = [
+  "USD",
+  "EUR",
+  "BRL",
+  "GBP",
+  "JPY",
+  "CAD",
+  "AUD",
+  "CHF",
+  "CNY",
+  "ARS",
+];
+
+app.get("/symbols", (req, res) => {
+  res.json({ symbols: fallbackSymbols });
+});
+
+// Rota de conversão usando AwesomeAPI com chave
 app.get("/convert", async (req, res) => {
   const { from, to, amount } = req.query;
-
-  if (!from || !to || !amount) {
+  if (!from || !to || !amount)
     return res
       .status(400)
-      .json({ message: "Parâmetros obrigatórios: from, to, amount" });
-  }
+      .json({ message: "from, to e amount são obrigatórios" });
 
   try {
-    const response = await axios.get("https://api.exchangerate.host/convert", {
-      params: { from, to, amount },
-    });
+    const pair = `${from.toUpperCase()}-${to.toUpperCase()}`;
 
-    res.json({
-      result: response.data.result,
-      query: response.data.query,
-      info: response.data.info,
-    });
+    const response = await axios.get(
+      `https://economia.awesomeapi.com.br/last/${pair}`,
+      {
+        params: { api_key: process.env.API_KEY }, // adiciona a chave aqui
+      }
+    );
+
+    const key = pair.replace("-", ""); // ex: USD-BRL → USDBRL
+    const rate = parseFloat(response.data[key].bid);
+    const result = parseFloat(amount) * rate;
+
+    res.json({ result });
   } catch (err) {
-    console.error(err);
+    console.error("Erro em /convert:", err.message);
     res.status(500).json({ message: "Erro ao converter moedas" });
   }
 });
 
-// Iniciar servidor
 app.listen(PORT, () =>
   console.log(`Servidor rodando em http://localhost:${PORT}`)
 );
