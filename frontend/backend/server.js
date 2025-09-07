@@ -65,11 +65,11 @@ app.get("/convert", async (req, res) => {
 });
 
 // ✅ CORREÇÃO: Servir arquivos estáticos do build do Vite
-app.use(express.static(path.resolve("frontend/dist")));
+app.use(express.static(path.resolve("dist")));
 
 // ✅ CORREÇÃO: Qualquer outra rota envia o index.html (SPA)
 app.use((req, res) => {
-  res.sendFile(path.resolve("frontend/dist/index.html"));
+  res.sendFile(path.resolve("dist/index.html"));
 });
 
 // Iniciar servidor
