@@ -1,9 +1,7 @@
 {
   "name": "exrate",
   "version": "1.0.0",
-  "private": true,
-  "type": "module",
   "scripts": {
-    "start": "node backend/server.js"
+    "start": "node frontend/backend/server.js"
   }
 }
