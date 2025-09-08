@@ -73,8 +73,8 @@ app.get("/convert", async (req, res) => {
 const frontPath = path.join(__dirname, "frontend", "dist"); // ou "build" se CRA
 app.use(express.static(frontPath));
 
-// SPA fallback: qualquer rota não reconhecida retorna index.html
-app.get("*", (req, res) => {
+// SPA fallback seguro
+app.use((req, res) => {
   res.sendFile(path.join(frontPath, "index.html"));
 });
 
