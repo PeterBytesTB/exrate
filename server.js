@@ -7,7 +7,7 @@ import { fileURLToPath } from "url";
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// Para __dirname no ESM
+// __dirname no ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -44,20 +44,19 @@ app.get("/convert", async (req, res) => {
 
   try {
     const pair = `${from.toUpperCase()}-${to.toUpperCase()}`;
-    const apiKey = process.env.API_KEY || ""; // sua chave da AwesomeAPI
+    const apiKey = process.env.API_KEY || "";
     const response = await axios.get(
       `https://economia.awesomeapi.com.br/last/${pair}`,
       { params: apiKey ? { api_key: apiKey } : {} }
     );
 
-    const dataKey = pair.replace("-", ""); // ex: USD-BRL → USDBRL
+    const dataKey = pair.replace("-", "");
     const bid = response.data[dataKey]?.bid;
 
-    if (!bid) {
+    if (!bid)
       return res
         .status(500)
         .json({ message: "Erro ao obter taxa de câmbio da API" });
-    }
 
     const rate = parseFloat(bid);
     const result = parseFloat(amount) * rate;
@@ -69,11 +68,11 @@ app.get("/convert", async (req, res) => {
   }
 });
 
-// Caminho absoluto para a build do front
-const frontPath = path.join(__dirname, "frontend", "dist"); // ou "build" se CRA
+// Servir front-end
+const frontPath = path.join(__dirname, "frontend", "dist");
 app.use(express.static(frontPath));
 
-// SPA fallback seguro
+// SPA fallback
 app.use((req, res) => {
   res.sendFile(path.join(frontPath, "index.html"));
 });
