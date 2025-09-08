@@ -1,7 +1,0 @@
-{
-  "name": "exrate",
-  "version": "1.0.0",
-  "scripts": {
-    "start": "cd frontend/backend; node server.js"
-  }
-}
