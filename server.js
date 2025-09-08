@@ -2,9 +2,14 @@ import express from "express";
 import cors from "cors";
 import axios from "axios";
 import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+
+// Para __dirname no ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Middleware
 app.use(cors());
@@ -64,12 +69,13 @@ app.get("/convert", async (req, res) => {
   }
 });
 
-// ✅ CORREÇÃO: Servir arquivos estáticos do build do Vite
-app.use(express.static(path.resolve("frontend/dist")));
+// Caminho absoluto para a build do front
+const frontPath = path.join(__dirname, "frontend", "dist"); // ou "build" se CRA
+app.use(express.static(frontPath));
 
-// ✅ CORREÇÃO: Qualquer outra rota envia o index.html (SPA)
-app.use((req, res) => {
-  res.sendFile(path.resolve("frontend/dist/index.html"));
+// SPA fallback: qualquer rota não reconhecida retorna index.html
+app.get("*", (req, res) => {
+  res.sendFile(path.join(frontPath, "index.html"));
 });
 
 // Iniciar servidor
