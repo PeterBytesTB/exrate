@@ -2,14 +2,9 @@ import express from "express";
 import cors from "cors";
 import axios from "axios";
 import path from "path";
-import { fileURLToPath } from "url";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-
-// __dirname no ESM
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Middleware
 app.use(cors());
@@ -44,19 +39,20 @@ app.get("/convert", async (req, res) => {
 
   try {
     const pair = `${from.toUpperCase()}-${to.toUpperCase()}`;
-    const apiKey = process.env.API_KEY || "";
+    const apiKey = process.env.API_KEY || ""; // sua chave da AwesomeAPI
     const response = await axios.get(
       `https://economia.awesomeapi.com.br/last/${pair}`,
       { params: apiKey ? { api_key: apiKey } : {} }
     );
 
-    const dataKey = pair.replace("-", "");
+    const dataKey = pair.replace("-", ""); // ex: USD-BRL → USDBRL
     const bid = response.data[dataKey]?.bid;
 
-    if (!bid)
+    if (!bid) {
       return res
         .status(500)
         .json({ message: "Erro ao obter taxa de câmbio da API" });
+    }
 
     const rate = parseFloat(bid);
     const result = parseFloat(amount) * rate;
@@ -68,13 +64,10 @@ app.get("/convert", async (req, res) => {
   }
 });
 
-// Servir front-end
-const frontPath = path.join(__dirname, "frontend", "dist");
-app.use(express.static(frontPath));
+app.use(express.static(path.resolve("frontend/dist")));
 
-// SPA fallback
 app.use((req, res) => {
-  res.sendFile(path.join(frontPath, "index.html"));
+  res.sendFile(path.resolve("frontend/dist/index.html"));
 });
 
 // Iniciar servidor
