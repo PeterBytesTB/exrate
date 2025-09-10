@@ -64,10 +64,10 @@ app.get("/convert", async (req, res) => {
   }
 });
 
-app.use(express.static(path.resolve("frontend/dist")));
+app.use(express.static(path.resolve("../../dist")));
 
 app.use((req, res) => {
-  res.sendFile(path.resolve("frontend/dist/index.html"));
+  res.sendFile(path.resolve("../../dist/index.html"));
 });
 
 // Iniciar servidor
